@@ -61,7 +61,7 @@ Sure, it's very usable. Remember that:
 
 ## How to install?
 
-It's very easy. See the [project homepage](http://slic3r.org/)
+It's very easy. See the bottom of the [project homepage](http://slic3r.org/)
 for instructions and links to the precompiled packages.
 
 ## Can I help?
