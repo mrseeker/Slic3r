@@ -224,6 +224,7 @@ our $Options = {
         height  => 150,
         serialize   => sub { join '\n', split /\R+/, $_[0] },
         deserialize => sub { join "\n", split /\\n/, $_[0] },
+        interpret => 1,
     },
     'end_gcode' => {
         label   => 'End GCODE',
@@ -234,6 +235,7 @@ our $Options = {
         height  => 150,
         serialize   => sub { join '\n', split /\R+/, $_[0] },
         deserialize => sub { join "\n", split /\\n/, $_[0] },
+        interpret => 1,
     },
     
     # retraction options
@@ -367,7 +369,16 @@ sub load {
         }
         next unless $key;
         my $opt = $Options->{$key};
-        set($key, $opt->{deserialize} ? $opt->{deserialize}->($2) : $2);
+        if ($opt->{interpret}) {
+            # build a regexp to match the available options
+            my $options = join '|',
+                grep !$Slic3r::Config::Options->{$_}{multiline},
+                keys %$Slic3r::Config::Options;
+    
+            # use that regexp to search and replace option names with option values
+            $value =~ s/\[($options)\]/Slic3r::Config->serialize($1)/eg;
+        }
+        set($key, $opt->{deserialize} ? $opt->{deserialize}->($value) : $value);
     }
     close $fh;
 }
