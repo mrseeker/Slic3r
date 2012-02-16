@@ -19,10 +19,11 @@ has 'processing_time' => (is => 'rw', required => 0);
 
 sub go {
     my $self = shift;
-    
-    die "Input file must have .stl extension\n" 
-        if $self->input_file !~ /\.stl$/i;
-    
+	if (!($self->input_file !~ /\.stl$/i) && !($self->input_file !~/\.amf$/i))
+{
+	die "Input file must have .stl or .amf extension\n" 
+	}
+	
     my $t0 = [gettimeofday];
     
     # skein the STL into layers
@@ -30,9 +31,18 @@ sub go {
     $self->status_cb->(10, "Processing triangulated mesh...");
     my $print;
     {
-        my $mesh = Slic3r::STL->read_file($self->input_file);
-        $mesh->check_manifoldness;
-        $print = Slic3r::Print->new_from_mesh($mesh);
+        if ($self->input_file ~~ /\.stl$/i)
+	{
+		my $mesh = Slic3r::STL->read_file($self->input_file);	
+		$mesh->check_manifoldness;
+        	$print = Slic3r::Print->new_from_mesh($mesh);
+	}
+	if ($self->input_file ~~ /\.amf$/i)
+	{
+		my $mesh = Slic3r::AMF->read_file($self->input_file);
+		$mesh->check_manifoldness;
+        	$print = Slic3r::Print->new_from_mesh($mesh);
+	}
     }
     
     # make skirt

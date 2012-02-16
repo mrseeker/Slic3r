@@ -1,13 +1,14 @@
 package Slic3r;
 
 # Copyright holder: Alessandro Ranellucci
+# Adapted for Ultimaker by Julius ter Pelkwijk
 # This application is licensed under the GNU Affero General Public License, version 3
 
 use strict;
 use warnings;
 require v5.10;
 
-our $VERSION = "0.6.1-dev";
+our $VERSION = "0.6.1-ultimaker";
 
 our $debug = 0;
 sub debugf {
@@ -32,6 +33,7 @@ use Slic3r::Polyline;
 use Slic3r::Print;
 use Slic3r::Skein;
 use Slic3r::STL;
+use Slic3r::AMF;
 use Slic3r::Surface;
 use Slic3r::TriangleMesh;
 use Slic3r::TriangleMesh::IntersectionLine;
