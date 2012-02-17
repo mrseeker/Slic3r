@@ -369,16 +369,7 @@ sub load {
         }
         next unless $key;
         my $opt = $Options->{$key};
-        if ($opt->{interpret}) {
-            # build a regexp to match the available options
-            my $options = join '|',
-                grep !$Slic3r::Config::Options->{$_}{multiline},
-                keys %$Slic3r::Config::Options;
-    
-            # use that regexp to search and replace option names with option values
-            $value =~ s/\[($options)\]/Slic3r::Config->serialize($1)/eg;
-        }
-        set($key, $opt->{deserialize} ? $opt->{deserialize}->($value) : $value);
+        set($key, $opt->{deserialize} ? $opt->{deserialize}->($2) : $2);
     }
     close $fh;
 }
