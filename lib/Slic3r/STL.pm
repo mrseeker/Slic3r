@@ -10,7 +10,6 @@ sub read_file {
     my ($file) = @_;
     
     open my $fh, '<', $file or die "Failed to open $file\n";
-    my $facets = [];
     
     # let's detect whether file is ASCII or binary
     my $mode;
@@ -35,12 +34,29 @@ sub read_file {
         $mode = ($size == $expected_size) ? 'binary' : 'ascii';
     }
     
+    my $facets = [];
     $mode eq 'ascii'
         ? _read_ascii($fh, $facets)
         : _read_binary($fh, $facets);
-    
     close $fh;
-    return Slic3r::TriangleMesh->new(facets => $facets);
+    
+    my $vertices = [];
+    {
+        my %vertices_map = ();
+        for (my $f = 0; $f <= $#$facets; $f++) {
+            for (1..3) {
+                my $point_id = join ',', @{$facets->[$f][$_]};
+                if (exists $vertices_map{$point_id}) {
+                    $facets->[$f][$_] = $vertices_map{$point_id};
+                } else {
+                    push @$vertices, $facets->[$f][$_];
+                    $facets->[$f][$_] = $vertices_map{$point_id} = $#$vertices;
+                }
+            }
+        }
+    }
+    
+    return Slic3r::TriangleMesh->new(vertices => $vertices, facets => $facets);
 }
 
 sub _read_ascii {
