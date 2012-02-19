@@ -35,17 +35,13 @@ sub new {
             title => 'Other speed settings',
             options => [qw(travel_speed bottom_layer_speed_ratio)],
         },
-        acceleration => {
-            title => 'Acceleration (experimental)',
-            options => [qw(acceleration perimeter_acceleration infill_acceleration)],
-        },
         accuracy => {
             title => 'Accuracy',
             options => [qw(layer_height first_layer_height_ratio infill_every_layers)],
         },
         print => {
             title => 'Print settings',
-            options => [qw(perimeters solid_layers fill_density fill_angle fill_pattern solid_fill_pattern)],
+            options => [qw(perimeters solid_layers fill_density fill_angle fill_pattern solid_fill_pattern support_material)],
         },
         retract => {
             title => 'Retraction',
@@ -105,7 +101,7 @@ sub new {
     
     my @tabs = (
         $make_tab->([qw(transform accuracy skirt)], [qw(print retract)]),
-        $make_tab->([qw(printer filament)], [qw(print_speed speed acceleration)]),
+        $make_tab->([qw(printer filament)], [qw(print_speed speed)]),
         $make_tab->([qw(gcode)]),
         $make_tab->([qw(notes)]),
         $make_tab->([qw(extrusion)], [qw(output)]),
@@ -150,7 +146,7 @@ sub new {
     return $self;
 }
 
-my $stl_wildcard = "STL files *.stl|*.stl;*.STL";
+my $model_wildcard = "STL files (*.stl)|*.stl;*.STL|AMF files (*.amf)|*.amf;*.AMF;*.xml;*.XML";
 my $ini_wildcard = "INI files *.ini|*.ini;*.INI";
 my $gcode_wildcard = "GCODE files *.gcode|*.gcode;*.GCODE";
 
@@ -173,7 +169,7 @@ sub do_slice {
         
         # select input file
         my $dir = $last_skein_dir || $last_config_dir || "";
-        my $dialog = Wx::FileDialog->new($self, 'Choose a STL file to slice:', $dir, "", $stl_wildcard, wxFD_OPEN);
+        my $dialog = Wx::FileDialog->new($self, 'Choose a STL or AMF file to slice:', $dir, "", $model_wildcard, wxFD_OPEN);
         return unless $dialog->ShowModal == wxID_OK;
         my ($input_file) = $dialog->GetPaths;
         my $input_file_basename = basename($input_file);

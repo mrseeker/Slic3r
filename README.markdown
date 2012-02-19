@@ -23,7 +23,7 @@ Slic3r current key features are:
 
 * multi-platform (Linux/Mac/Win) and packaged as standalone-app with no dependencies required;
 * easy configuration/calibration;
-* read binary and ASCII STL files;
+* read binary and ASCII STL files as well as AMF;
 * powerful command line interface;
 * easy GUI;
 * multithreaded;
@@ -37,6 +37,7 @@ Slic3r current key features are:
 * multiple solid layers near horizontal external surfaces;
 * ability to scale, rotate and duplicate input object;
 * customizable initial and final GCODE;
+* support material;
 * use different speed for bottom layer and perimeters.
 
 Experimental features include:
@@ -94,7 +95,7 @@ The author is Alessandro Ranellucci (me).
       
       Printer options:
         --nozzle-diameter   Diameter of nozzle in mm (default: 0.5)
-        --print-center      Coordinates of the point to center the print around 
+        --print-center      Coordinates in mm of the point to center the print around 
                             (default: 100,100)
         --use-relative-e-distances
                             Use relative distances for extrusion in GCODE output
@@ -114,16 +115,16 @@ The author is Alessandro Ranellucci (me).
                             Change this to alter the amount of plastic extruded. There should be
                             very little need to change this value, which is only useful to 
                             compensate for filament packing (default: 1)
-        --temperature       Extrusion temperature, set 0 to disable (default: 200)
+        --temperature       Extrusion temperature in degree Celsius, set 0 to disable (default: 200)
         
       Speed options:
-        --travel-speed      Speed of non-print moves in mm/sec (default: 130)
-        --perimeter-speed   Speed of print moves for perimeters in mm/sec (default: 30)
+        --travel-speed      Speed of non-print moves in mm/s (default: 130)
+        --perimeter-speed   Speed of print moves for perimeters in mm/s (default: 30)
         --small-perimeter-speed
-                            Speed of print moves for small perimeters in mm/sec (default: 30)
-        --infill-speed      Speed of print moves in mm/sec (default: 60)
-        --solid-infill-speed Speed of print moves for solid surfaces in mm/sec (default: 60)
-        --bridge-speed      Speed of bridge print moves in mm/sec (default: 60)
+                            Speed of print moves for small perimeters in mm/s (default: 30)
+        --infill-speed      Speed of print moves in mm/s (default: 60)
+        --solid-infill-speed Speed of print moves for solid surfaces in mm/s (default: 60)
+        --bridge-speed      Speed of bridge print moves in mm/s (default: 60)
         --bottom-layer-speed-ratio
                             Factor to increase/decrease speeds on bottom 
                             layer by (default: 0.3)
@@ -150,16 +151,17 @@ The author is Alessandro Ranellucci (me).
         --end-gcode         Load final gcode from the supplied file. This will overwrite 
                             the default commands (turn off temperature [M104 S0],
                             home X axis [G28 X], disable motors [M84]).
+        --support-material  Generate support material for overhangs
       
       Retraction options:
         --retract-length    Length of retraction in mm when pausing extrusion 
                             (default: 1)
-        --retract-speed     Speed for retraction in mm/sec (default: 30)
+        --retract-speed     Speed for retraction in mm/s (default: 30)
         --retract-restart-extra
                             Additional amount of filament in mm to push after
                             compensating retraction (default: 0)
         --retract-before-travel
-                            Only retract before travel moves of this length (default: 2)
+                            Only retract before travel moves of this length in mm (default: 2)
         --retract-lift      Lift Z by the given distance in mm when retracting (default: 0)
        
        Skirt options:

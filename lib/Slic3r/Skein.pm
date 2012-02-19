@@ -19,11 +19,6 @@ has 'processing_time' => (is => 'rw', required => 0);
 
 sub go {
     my $self = shift;
-	if (!($self->input_file !~ /\.stl$/i) && !($self->input_file !~/\.amf$/i))
-{
-	die "Input file must have .stl or .amf extension\n" 
-	}
-	
     my $t0 = [gettimeofday];
     
     # skein the STL into layers
@@ -31,23 +26,14 @@ sub go {
     $self->status_cb->(10, "Processing triangulated mesh...");
     my $print;
     {
-        if ($self->input_file ~~ /\.stl$/i)
-	{
-		my $mesh = Slic3r::STL->read_file($self->input_file);	
-		$mesh->check_manifoldness;
-        	$print = Slic3r::Print->new_from_mesh($mesh);
-	}
-	if ($self->input_file ~~ /\.amf$/i)
-	{
-		my $mesh = Slic3r::AMF->read_file($self->input_file);
-		$mesh->check_manifoldness;
-        	$print = Slic3r::Print->new_from_mesh($mesh);
-	}
+        my $mesh = $self->input_file =~ /\.stl$/i
+            ? Slic3r::STL->read_file($self->input_file)
+            : $self->input_file =~ /\.amf(\.xml)?$/i
+                ? Slic3r::AMF->read_file($self->input_file)
+                : die "Input file must have .stl or .amf(.xml) extension\n";
+        $mesh->check_manifoldness;
+        $print = Slic3r::Print->new_from_mesh($mesh);
     }
-    
-    # make skirt
-    $self->status_cb->(15, "Generating skirt...");
-    $print->extrude_skirt;
     
     # make perimeters
     # this will add a set of extrusion loops to each layer
@@ -128,6 +114,16 @@ sub go {
     # free memory
     @{$_->fill_surfaces} = () for @{$print->layers};
     
+    # generate support material
+    if ($Slic3r::support_material) {
+        $self->status_cb->(85, "Generating support material...");
+        $print->generate_support_material;
+    }
+    
+    # make skirt
+    $self->status_cb->(88, "Generating skirt...");
+    $print->extrude_skirt;
+    
     # output everything to a GCODE file
     $self->status_cb->(90, "Exporting GCODE...");
     $print->export_gcode($self->expanded_output_filepath);
@@ -156,7 +152,7 @@ sub expanded_output_filepath {
     
     my $input_basename = basename($self->input_file);
     $path =~ s/\[input_filename\]/$input_basename/g;  
-    $input_basename =~ s/\.stl$//i;
+    $input_basename =~ s/\.(?:stl|amf(?:\.xml)?)$//i;
     $path =~ s/\[input_filename_base\]/$input_basename/g;
     
     # build a regexp to match the available options

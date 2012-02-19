@@ -32,6 +32,7 @@ use Slic3r::Polygon;
 use Slic3r::Polyline;
 use Slic3r::Print;
 use Slic3r::Skein;
+use Slic3r::AMF;
 use Slic3r::STL;
 use Slic3r::AMF;
 use Slic3r::Surface;
@@ -62,18 +63,18 @@ our $extrusion_multiplier = 1;
 our $temperature        = 200;
 
 # speed options
-our $travel_speed           = 130;  # mm/sec
-our $perimeter_speed        = 30;   # mm/sec
-our $small_perimeter_speed  = 30;   # mm/sec
-our $infill_speed           = 60;   # mm/sec
-our $solid_infill_speed     = 60;   # mm/sec
-our $bridge_speed           = 60;   # mm/sec
+our $travel_speed           = 130;  # mm/s
+our $perimeter_speed        = 30;   # mm/s
+our $small_perimeter_speed  = 30;   # mm/s
+our $infill_speed           = 60;   # mm/s
+our $solid_infill_speed     = 60;   # mm/s
+our $bridge_speed           = 60;   # mm/s
 our $bottom_layer_speed_ratio   = 0.3;
 
 # acceleration options
 our $acceleration           = 0;
-our $perimeter_acceleration = 25;   # mm/sec^2
-our $infill_acceleration    = 50;   # mm/sec^2
+our $perimeter_acceleration = 25;   # mm/s^2
+our $infill_acceleration    = 50;   # mm/s^2
 
 # accuracy options
 our $resolution             = 0.00000001;
@@ -97,6 +98,7 @@ our $fill_pattern       = 'rectilinear';
 our $solid_fill_pattern = 'rectilinear';
 our $fill_density       = 0.4;  # 1 = 100%
 our $fill_angle         = 45;
+our $support_material   = 0;
 our $start_gcode = "G28 ; home all axes";
 our $end_gcode = <<"END";
 M104 S0 ; turn off temperature
@@ -107,7 +109,7 @@ END
 # retraction options
 our $retract_length         = 1;    # mm
 our $retract_restart_extra  = 0;    # mm
-our $retract_speed          = 30;   # mm/sec
+our $retract_speed          = 30;   # mm/s
 our $retract_before_travel  = 2;    # mm
 our $retract_lift           = 0;    # mm
 

@@ -140,12 +140,12 @@ our $Options = {
         type    => 'bool',
     },
     'perimeter_acceleration' => {
-        label   => 'Perimeters (mm/s^2)',
+        label   => 'Perimeters (mm/s²)',
         cli     => 'perimeter-acceleration',
         type    => 'f',
     },
     'infill_acceleration' => {
-        label   => 'Infill (mm/s^2)',
+        label   => 'Infill (mm/s²)',
         cli     => 'infill-acceleration',
         type    => 'f',
     },
@@ -214,6 +214,11 @@ our $Options = {
         label   => 'Fill angle (°)',
         cli     => 'fill-angle=i',
         type    => 'i',
+    },
+    'support_material' => {
+        label   => 'Generate support material',
+        cli     => 'support-material',
+        type    => 'bool',
     },
     'start_gcode' => {
         label   => 'Start GCODE',
@@ -505,6 +510,10 @@ sub validate {
     # --skirt-height
     die "Invalid value for --skirt-height\n"
         if $Slic3r::skirt_height < 0;
+    
+    # --bridge-flow-ratio
+    die "Invalid value for --bridge-flow-ratio\n"
+        if $Slic3r::bridge_flow_ratio <= 0;
     
     # legacy with existing config files
     $Slic3r::small_perimeter_speed ||= $Slic3r::perimeter_speed;
