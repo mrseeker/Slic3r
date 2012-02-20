@@ -40,6 +40,13 @@ our $Options = {
         serialize   => sub { join ',', @{$_[0]} },
         deserialize => sub { [ split /,/, $_[0] ] },
     },
+    'gcode_flavor' => {
+        label   => 'G-code flavor',
+        cli     => 'gcode-flavor=s',
+        type    => 'select',
+        values  => [qw(reprap teacup makerbot mach3 no-extrusion)],
+        labels  => ['RepRap (Marlin/Sprinter)', 'Teacup', 'MakerBot', 'Mach3/EMC', 'No extrusion'],
+    },
     'use_relative_e_distances' => {
         label   => 'Use relative E distances',
         cli     => 'use-relative-e-distances',
@@ -249,6 +256,16 @@ our $Options = {
         deserialize => sub { join "\n", split /\\n/, $_[0] },
         interpret => 1,
     },
+    'post_process' => {
+        label   => 'Post-processing scripts',
+        cli     => 'post-process=s@',
+        type    => 's@',
+        multiline => 1,
+        width   => 350,
+        height  => 60,
+        serialize   => sub { join '; ', @{$_[0]} },
+        deserialize => sub { [ split /\s*;\s*/, $_[0] ] },
+    },
     
     # retraction options
     'retract_length' => {
@@ -345,6 +362,14 @@ sub serialize {
     return $Options->{$opt_key}{serialize}
         ? $Options->{$opt_key}{serialize}->(get($opt_key))
         : get($opt_key);
+}
+
+sub deserialize {
+    my $class = @_ == 3 ? shift : undef;
+    my ($opt_key, $value) = @_;
+    return $Options->{$opt_key}{deserialize}
+        ? set($opt_key, $Options->{$opt_key}{deserialize}->($value))
+        : set($opt_key, $value);
 }
 
 sub save {
@@ -521,6 +546,9 @@ sub validate {
     # --bridge-flow-ratio
     die "Invalid value for --bridge-flow-ratio\n"
         if $Slic3r::bridge_flow_ratio <= 0;
+    
+    # G-code flavors
+    $Slic3r::extrusion_axis = 'A' if $Slic3r::gcode_flavor eq 'mach3';
     
     # legacy with existing config files
     $Slic3r::small_perimeter_speed ||= $Slic3r::perimeter_speed;

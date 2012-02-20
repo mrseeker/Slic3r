@@ -79,6 +79,10 @@ if ($ARGV[0]) {
     my $skein = Slic3r::Skein->new(
         input_file  => $input_file,
         output_file => $opt{output},
+        status_cb   => sub {
+            my ($percent, $message) = @_;
+            printf "=> $message\n";
+        },
     );
     $skein->go;
     
@@ -108,17 +112,17 @@ Usage: slic3r.pl [ OPTIONS ] file.stl
                         Output file name format; all config options enclosed in brackets
                         will be replaced by their values, as well as [input_filename_base]
                         and [input_filename] (default: $Slic3r::output_filename_format)
+    --post-process      Generated G-code will be processed with the supplied script;
+                        call this more than once to process through multiple scripts.
   
   Printer options:
     --nozzle-diameter   Diameter of nozzle in mm (default: $Slic3r::nozzle_diameter)
     --print-center      Coordinates in mm of the point to center the print around 
                         (default: $Slic3r::print_center->[0],$Slic3r::print_center->[1])
-    --use-relative-e-distances
-                        Use relative distances for extrusion in GCODE output
-    --extrusion-axis    The axis used for extrusion; leave empty to disable extrusion
-                        (default: $Slic3r::extrusion_axis)
     --z-offset          Additional height in mm to add to vertical coordinates
                         (+/-, default: $Slic3r::z_offset)
+    --gcode-flavor      The type of G-code to generate (reprap/teacup/makerbot/mach3/no-extrusion,
+                        default: $Slic3r::gcode_flavor)
     --gcode-arcs        Use G2/G3 commands for native arcs (experimental, not supported
                         by all firmwares)
     --g0                Use G0 commands for retraction (experimental, not supported by all

@@ -28,14 +28,7 @@ sub new_from_mesh {
     
     $mesh->rotate($Slic3r::rotate);
     $mesh->scale($Slic3r::scale / $Slic3r::resolution);
-    
-    # calculate the displacements needed to 
-    # have lowest value for each axis at coordinate 0
-    {
-        my @extents = $mesh->bounding_box;
-        my @shift = map -$extents[$_][MIN], X,Y,Z;
-        $mesh->move(@shift);
-    }
+    $mesh->align_to_origin;
     
     # initialize print job
     my @size = $mesh->size;
@@ -52,9 +45,8 @@ sub new_from_mesh {
     # (we might have created it because of the $max_layer = ... + 1 code below)
     pop @{$print->layers} if !@{$print->layers->[-1]->surfaces} && !@{$print->layers->[-1]->lines};
     
-    print "\n==> PROCESSING SLICES:\n";
     foreach my $layer (@{ $print->layers }) {
-        printf "Making surfaces for layer %d:\n", $layer->id;
+        Slic3r::debugf "Making surfaces for layer %d:\n", $layer->id;
         
         # layer currently has many lines representing intersections of
         # model facets with the layer plane. there may also be lines
@@ -524,8 +516,6 @@ sub export_gcode {
     my $self = shift;
     my ($file) = @_;
     
-    printf "Exporting GCODE file...\n";
-    
     # open output gcode file
     open my $fh, ">", $file
         or die "Failed to open $file for writing\n";
@@ -546,16 +536,20 @@ sub export_gcode {
     print  $fh "\n";
     
     # write start commands to file
-    printf $fh "M104 S%d ; set temperature\n", $Slic3r::temperature if $Slic3r::temperature;
+    printf $fh "M104 %s%d ; set temperature\n",
+        ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'), $Slic3r::temperature
+            if $Slic3r::temperature;
     print  $fh "$Slic3r::start_gcode\n";
-    printf $fh "M109 S%d ; wait for temperature to be reached\n", $Slic3r::temperature if $Slic3r::temperature;
+    printf $fh "M109 %s%d ; wait for temperature to be reached\n", 
+        ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'), $Slic3r::temperature
+            if $Slic3r::temperature && $Slic3r::gcode_flavor ne 'makerbot';
     print  $fh "G90 ; use absolute coordinates\n";
     print  $fh "G21 ; set units to millimeters\n";
-    printf $fh "G92 %s0 ; reset extrusion distance\n", $Slic3r::extrusion_axis if $Slic3r::extrusion_axis;
-    if ($Slic3r::use_relative_e_distances) {
-        print $fh "M83 ; use relative distances for extrusion\n";
-    } else {
-        print $fh "M82 ; use absolute distances for extrusion\n";
+    if ($Slic3r::gcode_flavor =~ /^(?:reprap|teacup|makerbot)$/) {
+        printf $fh "G92 %s0 ; reset extrusion distance\n", $Slic3r::extrusion_axis;
+        if (!$Slic3r::use_relative_e_distances && $Slic3r::gcode_flavor =~ /^(?:reprap|makerbot)$/) {
+            print $fh "M82 ; use absolute distances for extrusion\n";
+        }
     }
     
     # calculate X,Y shift to center print around specified origin

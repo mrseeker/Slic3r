@@ -21,7 +21,7 @@ sub new {
     my %panels = (
         printer => {
             title => 'Printer',
-            options => [qw(nozzle_diameter print_center z_offset use_relative_e_distances extrusion_axis g0)],
+            options => [qw(nozzle_diameter print_center z_offset gcode_flavor g0)],
         },
         filament => {
             title => 'Filament',
@@ -57,7 +57,7 @@ sub new {
         },
         gcode => {
             title => 'Custom GCODE',
-            options => [qw(start_gcode end_gcode gcode_comments)],
+            options => [qw(start_gcode end_gcode gcode_comments post_process)],
         },
         extrusion => {
             title => 'Extrusion',
@@ -118,6 +118,7 @@ sub new {
         $buttons_sizer = Wx::BoxSizer->new(wxHORIZONTAL);
         
         my $slice_button = Wx::Button->new($self, -1, "Slice...");
+        $slice_button->SetDefault();
         $buttons_sizer->Add($slice_button, 0);
         EVT_BUTTON($self, $slice_button, sub { $self->do_slice });
         
@@ -181,7 +182,7 @@ sub do_slice {
             status_cb   => sub {
                 my ($percent, $message) = @_;
                 if (&Wx::wxVERSION_STRING =~ / 2\.(8\.|9\.[2-9])/) {
-                    $process_dialog->Update($percent, $message);
+                    $process_dialog->Update($percent, "$message...");
                 }
             },
         );
