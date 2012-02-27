@@ -18,11 +18,10 @@ our @EXPORT_OK = qw(
     polyline_remove_parallel_continuous_edges polyline_remove_acute_vertices
     polygon_remove_acute_vertices polygon_remove_parallel_continuous_edges
     shortest_path collinear scale unscale merge_collinear_lines
-    rad2deg_dir bounding_box_center line_intersects_any
-    polyline_remove_short_segments normal triangle_normal
+    rad2deg_dir bounding_box_center line_intersects_any douglas_peucker
+    polyline_remove_short_segments normal triangle_normal polygon_is_convex
 );
 
-use Slic3r::Geometry::DouglasPeucker qw(Douglas_Peucker);
 use XXX;
 
 use constant PI => 4 * atan2(1, 1);
@@ -39,8 +38,7 @@ use constant MIN => 0;
 use constant MAX => 1;
 our $parallel_degrees_limit = abs(deg2rad(3));
 
-our $epsilon = 1E-4;
-sub epsilon () { $epsilon }
+sub epsilon () { 1E-4 }
 
 sub scale   ($) { $_[0] / $Slic3r::resolution }
 sub unscale ($) { $_[0] * $Slic3r::resolution }
@@ -108,6 +106,19 @@ sub same_point {
 sub distance_between_points {
     my ($p1, $p2) = @_;
     return sqrt((($p1->[X] - $p2->[X])**2) + ($p1->[Y] - $p2->[Y])**2);
+}
+
+sub point_line_distance {
+    my ($point, $line) = @_;
+    return distance_between_points($point, $line->[A])
+        if same_point($line->[A], $line->[B]);
+    
+    my $n = ($line->[B][X] - $line->[A][X]) * ($line->[A][Y] - $point->[Y])
+        - ($line->[A][X] - $point->[X]) * ($line->[B][Y] - $line->[A][Y]);
+    
+    my $d = sqrt((($line->[B][X] - $line->[A][X]) ** 2) + (($line->[B][Y] - $line->[A][Y]) ** 2));
+    
+    return abs($n) / $d;
 }
 
 sub line_length {
@@ -281,6 +292,16 @@ sub polygon_has_vertex {
         return 1 if points_coincide($p, $point);
     }
     return 0;
+}
+
+# polygon must be simple (non complex) and ccw
+sub polygon_is_convex {
+    my ($points) = @_;
+    for (my $i = 0; $i <= $#$points; $i++) {
+        my $angle = angle3points($points->[$i-1], $points->[$i-2], $points->[$i]);
+        return 0 if $angle < PI;
+    }
+    return 1;
 }
 
 sub polyline_length {
@@ -527,32 +548,7 @@ sub merge_collinear_lines {
 }
 
 sub _line_intersection {
-  my ( $x0, $y0, $x1, $y1, $x2, $y2, $x3, $y3 );
-
-  if ( @_ == 8 ) {
-    ( $x0, $y0, $x1, $y1, $x2, $y2, $x3, $y3 ) = @_;
-
-    # The bounding boxes chop the lines into line segments.
-    # bounding_box() is defined later in this chapter.
-    my @box_a = bounding_box([ [$x0, $y0], [$x1, $y1] ]);
-    my @box_b = bounding_box([ [$x2, $y2], [$x3, $y3] ]);
-    
-    # Take this test away and the line segments are
-    # turned into lines going from infinite to another.
-    # bounding_box_intersect() defined later in this chapter.
-    ###return "out of bounding box" unless bounding_box_intersect( 2, @box_a, @box_b );
-  }
-  elsif ( @_ == 4 ) { # The parametric form.
-    $x0 = $x2 = 0;
-    ( $y0, $y2 ) = @_[ 1, 3 ];
-    # Need to multiply by 'enough' to get 'far enough'.
-    my $abs_y0 = abs $y0;
-    my $abs_y2 = abs $y2;
-    my $enough = 10 * ( $abs_y0 > $abs_y2 ? $abs_y0 : $abs_y2 );
-    $x1 = $x3 = $enough;
-    $y1 = $_[0] * $x1 + $y0;
-    $y3 = $_[2] * $x2 + $y2;
-  }
+  my ( $x0, $y0, $x1, $y1, $x2, $y2, $x3, $y3 ) = @_;
 
   my ($x, $y);  # The as-yet-undetermined intersection point.
 
@@ -568,8 +564,7 @@ sub _line_intersection {
 
   my $dyx10;                            # The slopes.
   my $dyx32;
-
-
+  
   $dyx10 = $dy10 / $dx10 unless $dx10z;
   $dyx32 = $dy32 / $dx32 unless $dx32z;
 
@@ -623,12 +618,55 @@ sub _line_intersection {
   return [Slic3r::Point->new($x, $y), $h10 >= 0 && $h10 <= 1 && $h32 >= 0 && $h32 <= 1];
 }
 
+# http://paulbourke.net/geometry/lineline2d/
+sub _line_intersection2 {
+    my ($line1, $line2) = @_;
+    
+    my $denom = ($line2->[B][Y] - $line2->[A][Y]) * ($line1->[B][X] - $line1->[A][X])
+        - ($line2->[B][X] - $line2->[A][X]) * ($line1->[B][Y] - $line1->[A][Y]);
+    my $numerA = ($line2->[B][X] - $line2->[A][X]) * ($line1->[A][Y] - $line2->[A][Y])
+        - ($line2->[B][Y] - $line2->[A][Y]) * ($line1->[A][X] - $line2->[A][X]);
+    my $numerB = ($line1->[B][X] - $line1->[A][X]) * ($line1->[A][Y] - $line2->[A][Y])
+        - ($line1->[B][Y] - $line1->[A][Y]) * ($line1->[A][X] - $line2->[A][X]);
+    
+    # are the lines coincident?
+    if (abs($numerA) < epsilon && abs($numerB) < epsilon && abs($denom) < epsilon) {
+        return Slic3r::Point->new(
+            ($line1->[A][X] + $line1->[B][X]) / 2,
+            ($line1->[A][Y] + $line1->[B][Y]) / 2,
+        );
+    }
+    
+    # are the lines parallel?
+    if (abs($denom) < epsilon) {
+        return undef;
+    }
+    
+    # is the intersection along the segments?
+    my $muA = $numerA / $denom;
+    my $muB = $numerB / $denom;
+    if ($muA < 0 || $muA > 1 || $muB < 0 || $muB > 1) {
+        return undef;
+    }
+    
+    return Slic3r::Point->new(
+        $line1->[A][X] + $muA * ($line1->[B][X] - $line1->[A][X]),
+        $line1->[A][Y] + $muA * ($line1->[B][Y] - $line1->[A][Y]),
+    );
+}
+
 # 2D
 sub bounding_box {
     my ($points) = @_;
     
-    my @x = sort { $a <=> $b } map $_->[X], @$points;
-    my @y = sort { $a <=> $b } map $_->[Y], @$points;
+    my @x = (undef, undef);
+    my @y = (undef, undef);
+    for (@$points) {
+        $x[MIN] = $_->[X] if !defined $x[MIN] || $_->[X] < $x[MIN];
+        $x[MAX] = $_->[X] if !defined $x[MAX] || $_->[X] > $x[MAX];
+        $y[MIN] = $_->[Y] if !defined $y[MIN] || $_->[Y] < $y[MIN];
+        $y[MAX] = $_->[Y] if !defined $y[MAX] || $_->[Y] > $y[MAX];
+    }
     
     return ($x[0], $y[0], $x[-1], $y[-1]);
 }
@@ -738,6 +776,99 @@ sub shortest_path {
     }
     
     return $result;
+}
+
+sub douglas_peucker {
+    my ($points, $tolerance) = @_;
+    
+    my $results = [];
+    my $dmax = 0;
+    my $index = 0;
+    for my $i (1..$#$points) {
+        my $d = point_line_distance($points->[$i], [ $points->[0], $points->[-1] ]);
+        if ($d > $dmax) {
+            $index = $i;
+            $dmax = $d;
+        }
+    }
+    if ($dmax >= $tolerance) {
+        my $dp1 = douglas_peucker([ @$points[0..$index] ], $tolerance);
+        $results = [
+            @$dp1[0..($#$dp1-1)],
+            @{douglas_peucker([ @$points[$index..$#$points] ], $tolerance)},
+        ];
+    } else {
+        $results = [ $points->[0], $points->[-1] ];
+    }
+    return $results;
+}
+
+sub douglas_peucker2 {
+    my ($points, $tolerance) = @_;
+    
+    my $anchor = 0;
+    my $floater = $#$points;
+    my @stack = ();
+    my %keep = ();
+    
+    push @stack, [$anchor, $floater];
+    while (@stack) {
+        ($anchor, $floater) = @{pop @stack};
+        
+        # initialize line segment
+        my ($anchor_x, $anchor_y, $seg_len);
+        if (grep $points->[$floater][$_] != $points->[$anchor][$_], X, Y) {
+            $anchor_x = $points->[$floater][X] - $points->[$anchor][X];
+            $anchor_y = $points->[$floater][Y] - $points->[$anchor][Y];
+            $seg_len = sqrt(($anchor_x ** 2) + ($anchor_y ** 2));
+            # get the unit vector
+            $anchor_x /= $seg_len;
+            $anchor_y /= $seg_len;
+        } else {
+            $anchor_x = $anchor_y = $seg_len = 0;
+        }
+        
+        # inner loop:
+        my $max_dist = 0;
+        my $farthest = $anchor + 1;
+        for my $i (($anchor + 1) .. $floater) {
+            my $dist_to_seg = 0;
+            # compare to anchor
+            my $vecX = $points->[$i][X] - $points->[$anchor][X];
+            my $vecY = $points->[$i][Y] - $points->[$anchor][Y];
+            $seg_len = sqrt(($vecX ** 2) + ($vecY ** 2));
+            # dot product:
+            my $proj = $vecX * $anchor_x + $vecY * $anchor_y;
+            if ($proj < 0) {
+                $dist_to_seg = $seg_len;
+            } else {
+                # compare to floater
+                $vecX = $points->[$i][X] - $points->[$floater][X];
+                $vecY = $points->[$i][Y] - $points->[$floater][Y];
+                $seg_len = sqrt(($vecX ** 2) + ($vecY ** 2));
+                # dot product:
+                $proj = $vecX * (-$anchor_x) + $vecY * (-$anchor_y);
+                if ($proj < 0) {
+                    $dist_to_seg = $seg_len
+                } else {  # calculate perpendicular distance to line (pythagorean theorem):
+                    $dist_to_seg = sqrt(abs(($seg_len ** 2) - ($proj ** 2)));
+                }
+                if ($max_dist < $dist_to_seg) {
+                    $max_dist = $dist_to_seg;
+                    $farthest = $i;
+                }
+            }
+        }
+        
+        if ($max_dist <= $tolerance) { # use line segment
+            $keep{$_} = 1 for $anchor, $floater;
+        } else {
+            push @stack, [$anchor, $farthest];
+            push @stack, [$farthest, $floater];
+        }
+    }
+    
+    return [ map $points->[$_], sort keys %keep ];
 }
 
 1;

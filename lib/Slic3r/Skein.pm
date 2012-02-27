@@ -27,11 +27,11 @@ sub go {
     $self->status_cb->(10, "Processing triangulated mesh");
     my $print;
     if ($self->input_file =~ /\.stl$/i) {
-        my $mesh = Slic3r::STL->read_file($self->input_file);
+        my $mesh = Slic3r::Format::STL->read_file($self->input_file);
         $mesh->check_manifoldness;
         $print = Slic3r::Print->new_from_mesh($mesh);
     } elsif ( $self->input_file =~ /\.amf(\.xml)?$/i) {
-        my ($materials, $meshes_by_material) = Slic3r::AMF->read_file($self->input_file);
+        my ($materials, $meshes_by_material) = Slic3r::Format::AMF->read_file($self->input_file);
         $_->check_manifoldness for values %$meshes_by_material;
         $print = Slic3r::Print->new_from_mesh($meshes_by_material->{_} || +(values %$meshes_by_material)[0]);
     } else {
@@ -114,14 +114,14 @@ sub go {
         }
     }
     
-    # free memory
-    @{$_->fill_surfaces} = () for @{$print->layers};
-    
     # generate support material
     if ($Slic3r::support_material) {
         $self->status_cb->(85, "Generating support material");
         $print->generate_support_material;
     }
+    
+    # free memory (note that support material needs fill_surfaces)
+    @{$_->fill_surfaces} = () for @{$print->layers};
     
     # make skirt
     $self->status_cb->(88, "Generating skirt");

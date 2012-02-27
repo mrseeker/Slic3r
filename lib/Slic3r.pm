@@ -8,7 +8,11 @@ use strict;
 use warnings;
 require v5.10;
 
+<<<<<<< HEAD
 our $VERSION = "0.6.1-ultimaker";
+=======
+our $VERSION = "0.7.0";
+>>>>>>> upstream/master
 
 our $debug = 0;
 sub debugf {
@@ -23,6 +27,8 @@ use Slic3r::ExtrusionPath;
 use Slic3r::ExtrusionPath::Arc;
 use Slic3r::ExtrusionPath::Collection;
 use Slic3r::Fill;
+use Slic3r::Format::AMF;
+use Slic3r::Format::STL;
 use Slic3r::Geometry qw(PI);
 use Slic3r::Layer;
 use Slic3r::Line;
@@ -32,9 +38,12 @@ use Slic3r::Polygon;
 use Slic3r::Polyline;
 use Slic3r::Print;
 use Slic3r::Skein;
+<<<<<<< HEAD
 use Slic3r::AMF;
 use Slic3r::STL;
 use Slic3r::AMF;
+=======
+>>>>>>> upstream/master
 use Slic3r::Surface;
 use Slic3r::TriangleMesh;
 use Slic3r::TriangleMesh::IntersectionLine;
@@ -63,6 +72,7 @@ our $gcode_comments     = 0;
 our $filament_diameter  = 3;    # mm
 our $extrusion_multiplier = 1;
 our $temperature        = 200;
+our $first_layer_temperature;
 
 # speed options
 our $travel_speed           = 130;  # mm/s
@@ -80,7 +90,7 @@ our $infill_acceleration    = 50;   # mm/s^2
 
 # accuracy options
 our $resolution             = 0.00000001;
-our $small_perimeter_area   = (5 / $resolution) ** 2;
+our $small_perimeter_area   = ((6.5 / $resolution)**2)*PI;
 our $layer_height           = 0.4;
 our $first_layer_height_ratio = 1;
 our $infill_every_layers    = 1;
@@ -115,6 +125,16 @@ our $retract_restart_extra  = 0;    # mm
 our $retract_speed          = 30;   # mm/s
 our $retract_before_travel  = 2;    # mm
 our $retract_lift           = 0;    # mm
+
+# cooling options
+our $cooling                = 0;
+our $min_fan_speed          = 35;
+our $max_fan_speed          = 100;
+our $bridge_fan_speed       = 100;
+our $fan_below_layer_time   = 60;
+our $slowdown_below_layer_time = 15;
+our $min_print_speed        = 10;
+our $disable_fan_first_layers = 1;
 
 # skirt options
 our $skirts             = 1;

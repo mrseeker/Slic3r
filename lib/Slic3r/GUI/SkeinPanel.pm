@@ -25,7 +25,7 @@ sub new {
         },
         filament => {
             title => 'Filament',
-            options => [qw(filament_diameter extrusion_multiplier temperature)],
+            options => [qw(filament_diameter extrusion_multiplier temperature first_layer_temperature)],
         },
         print_speed => {
             title => 'Print speed',
@@ -46,6 +46,11 @@ sub new {
         retract => {
             title => 'Retraction',
             options => [qw(retract_length retract_lift retract_speed retract_restart_extra retract_before_travel)],
+        },
+        cooling => {
+            title => 'Cooling',
+            options => [qw(cooling min_fan_speed max_fan_speed bridge_fan_speed fan_below_layer_time slowdown_below_layer_time min_print_speed disable_fan_first_layers)],
+            label_width => 300,
         },
         skirt => {
             title => 'Skirt',
@@ -76,8 +81,10 @@ sub new {
 
     if (eval "use Growl::GNTP; 1") {
         # register growl notifications
-        $self->{growler} = Growl::GNTP->new(AppName => 'Slic3r'); #, AppIcon => "path/to/my/icon.gif");
-        $self->{growler}->register([{Name => 'SKEIN_DONE', DisplayName => 'Slicing Done'}]);
+        eval {
+            $self->{growler} = Growl::GNTP->new(AppName => 'Slic3r'); #, AppIcon => "path/to/my/icon.gif");
+            $self->{growler}->register([{Name => 'SKEIN_DONE', DisplayName => 'Slicing Done'}]);
+        };
     }
     
     my $tabpanel = Wx::Notebook->new($self, -1, Wx::wxDefaultPosition, Wx::wxDefaultSize, &Wx::wxNB_TOP);
@@ -101,6 +108,7 @@ sub new {
     
     my @tabs = (
         $make_tab->([qw(transform accuracy skirt)], [qw(print retract)]),
+        $make_tab->([qw(cooling)]),
         $make_tab->([qw(printer filament)], [qw(print_speed speed)]),
         $make_tab->([qw(gcode)]),
         $make_tab->([qw(notes)]),
@@ -108,10 +116,11 @@ sub new {
     );
     
     $tabpanel->AddPage($tabs[0], "Print Settings");
-    $tabpanel->AddPage($tabs[1], "Printer and Filament");
-    $tabpanel->AddPage($tabs[2], "Start/End GCODE");
-    $tabpanel->AddPage($tabs[3], "Notes");
-    $tabpanel->AddPage($tabs[4], "Advanced");
+    $tabpanel->AddPage($tabs[1], "Cooling");
+    $tabpanel->AddPage($tabs[2], "Printer and Filament");
+    $tabpanel->AddPage($tabs[3], "Start/End GCODE");
+    $tabpanel->AddPage($tabs[4], "Notes");
+    $tabpanel->AddPage($tabs[5], "Advanced");
         
     my $buttons_sizer;
     {

@@ -54,7 +54,7 @@ our $Options = {
     },
     'extrusion_axis' => {
         label   => 'Extrusion axis',
-        cli     => 'extrusion-axis',
+        cli     => 'extrusion-axis=s',
         type    => 's',
     },
     'z_offset' => {
@@ -90,6 +90,11 @@ our $Options = {
         cli     => 'extrusion-multiplier=f',
         type    => 'f',
         aliases => [qw(filament_packing_density)],
+    },
+    'first_layer_temperature' => {
+        label   => 'First layer temperature (°C)',
+        cli     => 'fisrt-layer-temperature=i',
+        type    => 'i',
     },
     'temperature' => {
         label   => 'Temperature (°C)',
@@ -292,6 +297,48 @@ our $Options = {
         label   => 'Lift Z (mm)',
         cli     => 'retract-lift=f',
         type    => 'f',
+    },
+    
+    # cooling options
+    'cooling' => {
+        label   => 'Enable cooling',
+        cli     => 'cooling',
+        type    => 'bool',
+    },
+    'min_fan_speed' => {
+        label   => 'Min fan speed (%)',
+        cli     => 'min-fan-speed=i',
+        type    => 'i',
+    },
+    'max_fan_speed' => {
+        label   => 'Max fan speed (%)',
+        cli     => 'max-fan-speed=i',
+        type    => 'i',
+    },
+    'bridge_fan_speed' => {
+        label   => 'Bridge fan speed (%)',
+        cli     => 'bridge-fan-speed=i',
+        type    => 'i',
+    },
+    'fan_below_layer_time' => {
+        label   => 'Enable fan if layer print time is below (approximate seconds)',
+        cli     => 'fan-below-layer-time=i',
+        type    => 'i',
+    },
+    'slowdown_below_layer_time' => {
+        label   => 'Slow down if layer print time is below (approximate seconds)',
+        cli     => 'slowdown-below-layer-time=i',
+        type    => 'i',
+    },
+    'min_print_speed' => {
+        label   => 'Min print speed (mm/s)',
+        cli     => 'min-print-speed=i',
+        type    => 'i',
+    },
+    'disable_fan_first_layers' => {
+        label   => 'Disable fan for the first N layers',
+        cli     => 'disable-fan-first-layers=i',
+        type    => 'i',
     },
     
     # skirt options
@@ -554,6 +601,7 @@ sub validate {
     $Slic3r::small_perimeter_speed ||= $Slic3r::perimeter_speed;
     $Slic3r::bridge_speed ||= $Slic3r::infill_speed;
     $Slic3r::solid_infill_speed ||= $Slic3r::infill_speed;
+    $Slic3r::first_layer_temperature //= $Slic3r::temperature; #/
 }
 
 1;

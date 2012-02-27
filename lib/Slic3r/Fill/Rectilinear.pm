@@ -38,7 +38,7 @@ sub fill_surface {
     my $x = $bounding_box->[X1];
     my $is_line_pattern = $self->isa('Slic3r::Fill::Line');
     for (my $i = 0; $x <= $bounding_box->[X2] + scale epsilon; $i++) {
-        my $vertical_line = [ [$x, $bounding_box->[Y2]], [$x, $bounding_box->[Y1]] ];
+        my $vertical_line = Slic3r::Line->new([$x, $bounding_box->[Y2]], [$x, $bounding_box->[Y1]]);
         if ($is_line_pattern && $i % 2) {
             $vertical_line->[A][X] -= $line_oscillation;
             $vertical_line->[B][X] += $line_oscillation;
@@ -59,9 +59,11 @@ sub fill_surface {
         );
         @paths = ();
         
+        # the 1 below disables the fix for connection lines being extruded outside $expolygon
+        # (this happens to gears, for example).  it works, but it's 30% slower with it enabled
         my $can_connect = $is_line_pattern
             ? sub { $_[X] <= (abs((($_[2][Y] - $bounding_box->[Y1])*(2 * $line_oscillation)/($bounding_box->[Y2] - $bounding_box->[Y1])) - $line_oscillation) + $distance_between_lines) && $_[Y] <= $distance_between_lines * 5 }
-            : sub { ($_[X] >= $distance_between_lines - epsilon) && ($_[X] <= $distance_between_lines + epsilon) && ($_[Y] <= $distance_between_lines * 5) };
+            : sub { ($_[X] >= $distance_between_lines - epsilon) && ($_[X] <= $distance_between_lines + epsilon) && ($_[Y] <= $distance_between_lines * 5) && (1 || $expolygon->encloses_point(Slic3r::Line->new(@_[2,3])->midpoint)) };
         
         foreach my $path ($collection->shortest_path) {
             if (@paths) {
@@ -69,7 +71,7 @@ sub fill_surface {
                 
                 # TODO: we should also check that both points are on a fill_boundary to avoid 
                 # connecting paths on the boundaries of internal regions
-                if ($can_connect->(@distance, $paths[-1][-1])) {
+                if ($can_connect->(@distance, $paths[-1][-1], $path->points->[0])) {
                     push @{$paths[-1]}, @{$path->points};
                     next;
                 }

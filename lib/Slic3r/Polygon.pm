@@ -32,7 +32,9 @@ sub clone {
 
 sub lines {
     my $self = shift;
-    return map Slic3r::Line->new($_), polygon_lines($self);
+    my @lines = polygon_lines($self);
+    bless $_, 'Slic3r::Line' for @lines;
+    return @lines;
 }
 
 sub cleanup {
@@ -109,7 +111,6 @@ sub subdivide {
         my $len = Slic3r::Geometry::line_length([ $self->[$i-1], $self->[$i] ]);
         my $num_points = int($len / $max_length) - 1;
         $num_points++ if $len % $max_length;
-        next unless $num_points;
         
         # $num_points is the number of points to add between $i-1 and $i
         my $spacing = $len / ($num_points + 1);

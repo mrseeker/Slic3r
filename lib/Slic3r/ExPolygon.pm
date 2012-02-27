@@ -5,7 +5,7 @@ use warnings;
 # an ExPolygon is a polygon with holes
 
 use Math::Geometry::Voronoi;
-use Slic3r::Geometry qw(point_in_polygon X Y A B);
+use Slic3r::Geometry qw(X Y A B point_in_polygon);
 use Slic3r::Geometry::Clipper qw(union_ex JT_MITER);
 
 # the constructor accepts an array of polygons 
@@ -108,10 +108,20 @@ sub bounding_box {
     return Slic3r::Geometry::bounding_box($self->contour);
 }
 
+sub bounding_box_polygon {
+    my $self = shift;
+    my @bb = $self->bounding_box;
+    return Slic3r::Polygon->new([
+        [ $bb[0], $bb[1] ],
+        [ $bb[2], $bb[1] ],
+        [ $bb[2], $bb[3] ],
+        [ $bb[0], $bb[3] ],
+    ]);
+}
+
 sub clip_line {
     my $self = shift;
-    my ($line) = @_;
-    $line = Slic3r::Line->new($line) if ref $line eq 'ARRAY';
+    my ($line) = @_;  # line must be a Slic3r::Line object
     
     my @intersections = grep $_, map $_->intersection($line, 1), map $_->lines, @$self;
     my @dir = (
@@ -139,6 +149,11 @@ sub clip_line {
         push @lines, [ @points ];
     }
     return [@lines];
+}
+
+sub simplify {
+    my $self = shift;
+    $_->simplify(@_) for @$self;
 }
 
 sub translate {
@@ -249,7 +264,7 @@ sub medial_axis {
     
     # cleanup
     Slic3r::Geometry::polyline_remove_short_segments($polyline, $width / 2);
-    @$polyline = Slic3r::Geometry::Douglas_Peucker($polyline, $width / 100);
+    $polyline = Slic3r::Geometry::douglas_peucker($polyline, $width / 7);
     Slic3r::Geometry::polyline_remove_parallel_continuous_edges($polyline);
     
     if (Slic3r::Geometry::same_point($polyline->[0], $polyline->[-1])) {
