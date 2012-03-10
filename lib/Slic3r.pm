@@ -8,11 +8,7 @@ use strict;
 use warnings;
 require v5.10;
 
-<<<<<<< HEAD
-our $VERSION = "0.6.1-ultimaker";
-=======
-our $VERSION = "0.7.0";
->>>>>>> upstream/master
+our $VERSION = "0.7.0-ultimaker";
 
 our $debug = 0;
 sub debugf {
@@ -38,12 +34,6 @@ use Slic3r::Polygon;
 use Slic3r::Polyline;
 use Slic3r::Print;
 use Slic3r::Skein;
-<<<<<<< HEAD
-use Slic3r::AMF;
-use Slic3r::STL;
-use Slic3r::AMF;
-=======
->>>>>>> upstream/master
 use Slic3r::Surface;
 use Slic3r::TriangleMesh;
 use Slic3r::TriangleMesh::IntersectionLine;
@@ -113,11 +103,9 @@ our $fill_angle         = 45;
 our $support_material   = 0;
 our $support_material_tool = 0;
 our $start_gcode = "G28 ; home all axes";
-our $end_gcode = <<"END";
-M104 S0 ; turn off temperature
+our $end_gcode = "M104 S0 ; turn off temperature
 G28 X0  ; home X axis
-M84     ; disable motors
-END
+M84     ; disable motors";
 
 # retraction options
 our $retract_length         = 1;    # mm
