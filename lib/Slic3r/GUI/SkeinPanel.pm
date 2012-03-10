@@ -21,11 +21,11 @@ sub new {
     my %panels = (
         printer => {
             title => 'Printer',
-            options => [qw(nozzle_diameter print_center z_offset gcode_flavor g0)],
+            options => [qw(nozzle_diameter print_center z_offset gcode_flavor use_relative_e_distances)],
         },
         filament => {
             title => 'Filament',
-            options => [qw(filament_diameter extrusion_multiplier temperature first_layer_temperature)],
+            options => [qw(filament_diameter extrusion_multiplier temperature first_layer_temperature bed_temperature first_layer_bed_temperature)],
         },
         print_speed => {
             title => 'Print speed',
@@ -49,7 +49,7 @@ sub new {
         },
         cooling => {
             title => 'Cooling',
-            options => [qw(cooling min_fan_speed max_fan_speed bridge_fan_speed fan_below_layer_time slowdown_below_layer_time min_print_speed disable_fan_first_layers)],
+            options => [qw(cooling min_fan_speed max_fan_speed bridge_fan_speed fan_below_layer_time slowdown_below_layer_time min_print_speed disable_fan_first_layers fan_always_on)],
             label_width => 300,
         },
         skirt => {
@@ -128,14 +128,14 @@ sub new {
         
         my $slice_button = Wx::Button->new($self, -1, "Slice...");
         $slice_button->SetDefault();
-        $buttons_sizer->Add($slice_button, 0);
+        $buttons_sizer->Add($slice_button, 0, wxRIGHT, 20);
         EVT_BUTTON($self, $slice_button, sub { $self->do_slice });
         
-        my $save_button = Wx::Button->new($self, -1, "Save configuration...");
+        my $save_button = Wx::Button->new($self, -1, "Save config...");
         $buttons_sizer->Add($save_button, 0);
         EVT_BUTTON($self, $save_button, sub { $self->save_config });
         
-        my $load_button = Wx::Button->new($self, -1, "Load configuration...");
+        my $load_button = Wx::Button->new($self, -1, "Load config...");
         $buttons_sizer->Add($load_button, 0);
         EVT_BUTTON($self, $load_button, sub { $self->load_config });
         

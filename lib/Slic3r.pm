@@ -8,7 +8,11 @@ use strict;
 use warnings;
 require v5.10;
 
+<<<<<<< HEAD
 our $VERSION = "0.7.0-ultimaker";
+=======
+our $VERSION = "0.7.1-dev";
+>>>>>>> upstream/master
 
 our $debug = 0;
 sub debugf {
@@ -63,6 +67,8 @@ our $filament_diameter  = 3;    # mm
 our $extrusion_multiplier = 1;
 our $temperature        = 200;
 our $first_layer_temperature;
+our $bed_temperature    = 0;
+our $first_layer_bed_temperature;
 
 # speed options
 our $travel_speed           = 130;  # mm/s
@@ -123,6 +129,7 @@ our $fan_below_layer_time   = 60;
 our $slowdown_below_layer_time = 15;
 our $min_print_speed        = 10;
 our $disable_fan_first_layers = 1;
+our $fan_always_on          = 0;
 
 # skirt options
 our $skirts             = 1;

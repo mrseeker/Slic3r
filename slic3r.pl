@@ -120,6 +120,7 @@ Usage: slic3r.pl [ OPTIONS ] file.stl
                         (+/-, default: $Slic3r::z_offset)
     --gcode-flavor      The type of G-code to generate (reprap/teacup/makerbot/mach3/no-extrusion,
                         default: $Slic3r::gcode_flavor)
+    --use-relative-e-distances Enable this to get relative E values
     --gcode-arcs        Use G2/G3 commands for native arcs (experimental, not supported
                         by all firmwares)
     --g0                Use G0 commands for retraction (experimental, not supported by all
@@ -135,6 +136,9 @@ Usage: slic3r.pl [ OPTIONS ] file.stl
     --temperature       Extrusion temperature in degree Celsius, set 0 to disable (default: $Slic3r::temperature)
     --first-layer-temperature Extrusion temperature for the first layer, in degree Celsius,
                         set 0 to disable (default: same as --temperature)
+    --bed-temperature   Heated bed temperature in degree Celsius, set 0 to disable (default: $Slic3r::temperature)
+    --first-layer-bed-temperature Heated bed temperature for the first layer, in degree Celsius,
+                        set 0 to disable (default: same as --bed-temperature)
     
   Speed options:
     --travel-speed      Speed of non-print moves in mm/s (default: $Slic3r::travel_speed)
@@ -194,6 +198,8 @@ Usage: slic3r.pl [ OPTIONS ] file.stl
                         of seconds (default: $Slic3r::slowdown_below_layer_time)
     --min-print-speed   Minimum print speed speed (mm/s, default: $Slic3r::min_print_speed)
     --disable-fan-first-layers Disable fan for the first N layers (default: $Slic3r::disable_fan_first_layers)
+    --fan-always-on     Keep fan always on at min fan speed, even for layers that don't need
+                        cooling
    
    Skirt options:
     --skirts            Number of skirts to draw (0+, default: $Slic3r::skirts)

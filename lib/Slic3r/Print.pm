@@ -586,16 +586,19 @@ sub export_gcode {
     print  $fh "\n";
     
     # write start commands to file
+    printf $fh "M190 %s%d ; set bed temperature\n",
+        ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'), $Slic3r::first_layer_bed_temperature
+            if $Slic3r::first_layer_bed_temperature && $Slic3r::start_gcode !~ /M190/i;
     printf $fh "M104 %s%d ; set temperature\n",
         ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'), $Slic3r::first_layer_temperature
             if $Slic3r::first_layer_temperature;
-    print  $fh "$Slic3r::start_gcode\n";
+    printf $fh "%s\n", Slic3r::Config->replace_options($Slic3r::start_gcode);
     printf $fh "M109 %s%d ; wait for temperature to be reached\n", 
         ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'), $Slic3r::first_layer_temperature
             if $Slic3r::first_layer_temperature && $Slic3r::gcode_flavor ne 'makerbot';
     print  $fh "G90 ; use absolute coordinates\n";
     print  $fh "G21 ; set units to millimeters\n";
-    if ($Slic3r::gcode_flavor =~ /^(?:reprap|teacup|makerbot)$/) {
+    if ($Slic3r::gcode_flavor =~ /^(?:reprap|teacup)$/) {
         printf $fh "G92 %s0 ; reset extrusion distance\n", $Slic3r::extrusion_axis;
         if ($Slic3r::gcode_flavor =~ /^(?:reprap|makerbot)$/) {
             if ($Slic3r::use_relative_e_distances) {
@@ -619,6 +622,7 @@ sub export_gcode {
     if ($Slic3r::support_material && $Slic3r::support_material_tool > 0) {
         print $fh $extruder->set_tool(0);
     }
+    print $fh $extruder->set_fan(0, 1) if $Slic3r::cooling && $Slic3r::disable_fan_first_layers;
     
     # write gcode commands layer by layer
     foreach my $layer (@{ $self->layers }) {
@@ -626,12 +630,13 @@ sub export_gcode {
             printf $fh "M104 %s%d ; set temperature\n",
                 ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'), $Slic3r::temperature
                 if $Slic3r::temperature && $Slic3r::temperature != $Slic3r::first_layer_temperature;
+            printf $fh "M140 %s%d ; set bed temperature\n",
+                ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'), $Slic3r::bed_temperature
+                if $Slic3r::bed_temperature && $Slic3r::bed_temperature != $Slic3r::first_layer_bed_temperature;
         }
         
         # go to layer
-        print $fh $extruder->change_layer($layer);
-        
-        my $layer_gcode = "";
+        my $layer_gcode = $extruder->change_layer($layer);
         $extruder->elapsed_time(0);
         
         # extrude skirts
@@ -672,20 +677,18 @@ sub export_gcode {
         }
         last if !$layer_gcode;
         
-        my $fan_speed = 0;
+        my $fan_speed = $Slic3r::fan_always_on ? $Slic3r::min_fan_speed : 0;
         my $speed_factor = 1;
         if ($Slic3r::cooling) {
             my $layer_time = $extruder->elapsed_time;
             Slic3r::debugf "Layer %d estimated printing time: %d seconds\n", $layer->id, $layer_time;
-            if ($layer_time < $Slic3r::fan_below_layer_time) {
-                if ($layer_time < $Slic3r::slowdown_below_layer_time) {
-                    $fan_speed = $Slic3r::max_fan_speed;
-                    $speed_factor = $layer_time / $Slic3r::slowdown_below_layer_time;
-                } else {
-                    $fan_speed = $Slic3r::max_fan_speed - ($Slic3r::max_fan_speed - $Slic3r::min_fan_speed)
-                        * ($layer_time - $Slic3r::slowdown_below_layer_time)
-                        / ($Slic3r::fan_below_layer_time - $Slic3r::slowdown_below_layer_time); #/
-                }
+            if ($layer_time < $Slic3r::slowdown_below_layer_time) {
+                $fan_speed = $Slic3r::max_fan_speed;
+                $speed_factor = $layer_time / $Slic3r::slowdown_below_layer_time;
+            } elsif ($layer_time < $Slic3r::fan_below_layer_time) {
+                $fan_speed = $Slic3r::max_fan_speed - ($Slic3r::max_fan_speed - $Slic3r::min_fan_speed)
+                    * ($layer_time - $Slic3r::slowdown_below_layer_time)
+                    / ($Slic3r::fan_below_layer_time - $Slic3r::slowdown_below_layer_time); #/
             }
             Slic3r::debugf "  fan = %d%%, speed = %d%%\n", $fan_speed, $speed_factor * 100;
             
@@ -696,15 +699,15 @@ sub export_gcode {
                     /gexm;
             }
             $fan_speed = 0 if $layer->id < $Slic3r::disable_fan_first_layers;
-            $layer_gcode = $extruder->set_fan($fan_speed) . $layer_gcode;
         }
+        $layer_gcode = $extruder->set_fan($fan_speed) . $layer_gcode;
         
         # bridge fan speed
         if (!$Slic3r::cooling || $Slic3r::bridge_fan_speed == 0 || $layer->id < $Slic3r::disable_fan_first_layers) {
-            $layer_gcode =~ s/^_BRIDGE_FAN_(?:START|END)\n//gm;
+            $layer_gcode =~ s/^;_BRIDGE_FAN_(?:START|END)\n//gm;
         } else {
-            $layer_gcode =~ s/^_BRIDGE_FAN_START\n/ $extruder->set_fan($Slic3r::bridge_fan_speed, 1) /gmex;
-            $layer_gcode =~ s/^_BRIDGE_FAN_END\n/ $extruder->set_fan($fan_speed, 1) /gmex;
+            $layer_gcode =~ s/^;_BRIDGE_FAN_START\n/ $extruder->set_fan($Slic3r::bridge_fan_speed, 1) /gmex;
+            $layer_gcode =~ s/^;_BRIDGE_FAN_END\n/ $extruder->set_fan($fan_speed, 1) /gmex;
         }
         
         print $fh $layer_gcode;
@@ -717,7 +720,7 @@ sub export_gcode {
     print $fh $extruder->retract;
     print $fh $extruder->set_fan(0);
     print $fh "M501 ; reset acceleration\n" if $Slic3r::acceleration;
-    print $fh "$Slic3r::end_gcode\n";
+    printf $fh "%s\n", Slic3r::Config->replace_options($Slic3r::end_gcode);
     
     printf $fh "; filament used = %.1fmm (%.1fcm3)\n",
         $self->total_extrusion_length, $self->total_extrusion_volume;

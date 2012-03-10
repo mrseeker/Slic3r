@@ -205,7 +205,7 @@ sub retract {
     
     # reset extrusion distance during retracts
     # this makes sure we leave sufficient precision in the firmware
-    if (!$Slic3r::use_relative_e_distances) {
+    if (!$Slic3r::use_relative_e_distances && $Slic3r::gcode_flavor ne 'mach3') {
         $gcode .= "G92 " . $Slic3r::extrusion_axis . "0\n";
         $self->extrusion_distance(0);
     }
@@ -307,7 +307,7 @@ sub _Gx {
     my $append_bridge_off = 0;
     if ($speed ne $self->last_speed) {
         if ($speed eq 'bridge') {
-            $gcode = "_BRIDGE_FAN_START\n$gcode";
+            $gcode = ";_BRIDGE_FAN_START\n$gcode";
         } elsif ($self->last_speed eq 'bridge') {
             $append_bridge_off = 1;
         }
@@ -325,7 +325,7 @@ sub _Gx {
     
     $gcode .= sprintf " ; %s", $comment if $comment && $Slic3r::gcode_comments;
     if ($append_bridge_off) {
-        $gcode .= "\n_BRIDGE_FAN_END";
+        $gcode .= "\n;_BRIDGE_FAN_END";
     }
     return "$gcode\n";
 }

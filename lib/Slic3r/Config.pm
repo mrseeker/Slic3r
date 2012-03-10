@@ -9,7 +9,7 @@ our $Options = {
 
     # miscellaneous options
     'notes' => {
-        label   => 'Configuraton notes',
+        label   => 'Configuration notes',
         cli		=> 'notes=s',
         type    => 's',
         multiline => 1,
@@ -73,7 +73,7 @@ our $Options = {
         type    => 'bool',
     },
     'gcode_comments' => {
-        label   => 'Verbose GCODE (comments)',
+        label   => 'Verbose G-code',
         cli     => 'gcode-comments',
         type    => 'bool',
     },
@@ -96,11 +96,21 @@ our $Options = {
         cli     => 'first-layer-temperature=i',
         type    => 'i',
     },
+    'first_layer_bed_temperature' => {
+        label   => 'First layer bed temperature (°C)',
+        cli     => 'first-layer-bed-temperature=i',
+        type    => 'i',
+    },
     'temperature' => {
         label   => 'Temperature (°C)',
         cli     => 'temperature=i',
         type    => 'i',
         important => 1,
+    },
+    'bed_temperature' => {
+        label   => 'Bed Temperature (°C)',
+        cli     => 'bed-temperature=i',
+        type    => 'i',
     },
     
     # speed options
@@ -339,6 +349,11 @@ our $Options = {
         label   => 'Disable fan for the first N layers',
         cli     => 'disable-fan-first-layers=i',
         type    => 'i',
+    },
+    'fan_always_on' => {
+        label   => 'Keep fan always on',
+        cli     => 'fan-always-on',
+        type    => 'bool',
     },
     
     # skirt options
@@ -593,6 +608,9 @@ sub validate {
     # --bridge-flow-ratio
     die "Invalid value for --bridge-flow-ratio\n"
         if $Slic3r::bridge_flow_ratio <= 0;
+
+	$Slic3r::first_layer_temperature //= $Slic3r::temperature;          #/
+	$Slic3r::first_layer_bed_temperature //= $Slic3r::bed_temperature;  #/
     
     # G-code flavors
     $Slic3r::extrusion_axis = 'A' if $Slic3r::gcode_flavor eq 'mach3';
@@ -601,7 +619,25 @@ sub validate {
     $Slic3r::small_perimeter_speed ||= $Slic3r::perimeter_speed;
     $Slic3r::bridge_speed ||= $Slic3r::infill_speed;
     $Slic3r::solid_infill_speed ||= $Slic3r::infill_speed;
-    $Slic3r::first_layer_temperature //= $Slic3r::temperature; #/
+}
+
+sub replace_options {
+    my $class = shift;
+    my ($string, $more_variables) = @_;
+    
+    if ($more_variables) {
+        my $variables = join '|', keys %$more_variables;
+        $string =~ s/\[($variables)\]/$more_variables->{$1}/eg;
+    }
+    
+    # build a regexp to match the available options
+    my $options = join '|',
+        grep !$Slic3r::Config::Options->{$_}{multiline},
+        keys %$Slic3r::Config::Options;
+    
+    # use that regexp to search and replace option names with option values
+    $string =~ s/\[($options)\]/Slic3r::Config->serialize($1)/eg;
+    return $string;
 }
 
 1;

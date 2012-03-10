@@ -102,6 +102,7 @@ The author is Alessandro Ranellucci (me).
                             (+/-, default: 0)
         --gcode-flavor      The type of G-code to generate (reprap/teacup/makerbot/mach3/no-extrusion,
                             default: reprap)
+        --use-relative-e-distances Enable this to get relative E values
         --gcode-arcs        Use G2/G3 commands for native arcs (experimental, not supported
                             by all firmwares)
         --g0                Use G0 commands for retraction (experimental, not supported by all
@@ -117,6 +118,9 @@ The author is Alessandro Ranellucci (me).
         --temperature       Extrusion temperature in degree Celsius, set 0 to disable (default: 200)
         --first-layer-temperature Extrusion temperature for the first layer, in degree Celsius,
                             set 0 to disable (default: same as --temperature)
+        --bed-temperature   Heated bed temperature in degree Celsius, set 0 to disable (default: 200)
+        --first-layer-bed-temperature Heated bed temperature for the first layer, in degree Celsius,
+                            set 0 to disable (default: same as --bed-temperature)
         
       Speed options:
         --travel-speed      Speed of non-print moves in mm/s (default: 130)
@@ -176,6 +180,8 @@ The author is Alessandro Ranellucci (me).
                             of seconds (default: 15)
         --min-print-speed   Minimum print speed speed (mm/s, default: 10)
         --disable-fan-first-layers Disable fan for the first N layers (default: 1)
+        --fan-always-on     Keep fan always on at min fan speed, even for layers that don't need
+                            cooling
        
        Skirt options:
         --skirts            Number of skirts to draw (0+, default: 1)
@@ -198,6 +204,8 @@ The author is Alessandro Ranellucci (me).
                             Calculate the extrusion width as the layer height multiplied by
                             this value (> 0, default: calculated automatically)
         --bridge-flow-ratio Multiplier for extrusion when bridging (> 0, default: 1)
+        
+
 
 If you want to change a preset file, just do
 
