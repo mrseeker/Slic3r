@@ -8,11 +8,7 @@ use strict;
 use warnings;
 require v5.10;
 
-<<<<<<< HEAD
-our $VERSION = "0.7.0-ultimaker";
-=======
-our $VERSION = "0.7.1-dev";
->>>>>>> upstream/master
+our $VERSION = "0.7.1"+"-ultimaker";
 
 our $debug = 0;
 sub debugf {
@@ -52,7 +48,7 @@ our $output_filename_format = '[input_filename_base].gcode';
 our $post_process       = [];
 
 # printer options
-our $nozzle_diameter    = 0.5;
+our $nozzle_diameter    = 0.4;
 our $print_center       = [100,100];  # object will be centered around this point
 our $z_offset           = 0;
 our $gcode_flavor       = 'reprap';
@@ -63,7 +59,7 @@ our $g0                 = 0;
 our $gcode_comments     = 0;
 
 # filament options
-our $filament_diameter  = 3;    # mm
+our $filament_diameter  = 2.94;    # mm
 our $extrusion_multiplier = 1;
 our $temperature        = 200;
 our $first_layer_temperature;
