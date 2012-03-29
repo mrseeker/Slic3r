@@ -26,6 +26,7 @@ my %cli_options = ();
         'load=s@'               => \$opt{load},
         'ignore-nonexistent-config' => \$opt{ignore_nonexistent_config},
         'threads|j=i'           => \$Slic3r::threads,
+        'export-svg'            => \$opt{export_svg},
     );
     foreach my $opt_key (keys %$Slic3r::Config::Options) {
         my $opt = $Slic3r::Config::Options->{$opt_key};
@@ -81,7 +82,11 @@ if (@ARGV) {
                 printf "=> $message\n";
             },
         );
-        $skein->go;        
+        if ($opt{export_svg}) {
+            $skein->export_svg;
+        } else {
+            $skein->go;
+        }
     }
 } else {
     usage(1) unless $opt{save};
@@ -111,6 +116,7 @@ Usage: slic3r.pl [ OPTIONS ] file.stl
                         and [input_filename] (default: $Slic3r::output_filename_format)
     --post-process      Generated G-code will be processed with the supplied script;
                         call this more than once to process through multiple scripts.
+    --export-svg        Export a SVG file containing slices instead of G-code.
   
   Printer options:
     --nozzle-diameter   Diameter of nozzle in mm (default: $Slic3r::nozzle_diameter)
@@ -125,7 +131,7 @@ Usage: slic3r.pl [ OPTIONS ] file.stl
                         by all firmwares)
     --g0                Use G0 commands for retraction (experimental, not supported by all
                         firmwares)
-    --gcode-comments    Make GCODE verbose by adding comments (default: no)
+    --gcode-comments    Make G-code verbose by adding comments (default: no)
     
   Filament options:
     --filament-diameter Diameter in mm of your raw filament (default: $Slic3r::filament_diameter)
@@ -161,19 +167,19 @@ Usage: slic3r.pl [ OPTIONS ] file.stl
                         Infill every N layers (default: $Slic3r::infill_every_layers)
   
   Print options:
-    --perimeters        Number of perimeters/horizontal skins (range: 1+, 
-                        default: $Slic3r::perimeters)
+    --perimeters        Number of perimeters/horizontal skins (range: 0+, default: $Slic3r::perimeters)
     --solid-layers      Number of solid layers to do for top/bottom surfaces
                         (range: 1+, default: $Slic3r::solid_layers)
     --fill-density      Infill density (range: 0-1, default: $Slic3r::fill_density)
     --fill-angle        Infill angle in degrees (range: 0-90, default: $Slic3r::fill_angle)
     --fill-pattern      Pattern to use to fill non-solid layers (default: $Slic3r::fill_pattern)
     --solid-fill-pattern Pattern to use to fill solid layers (default: $Slic3r::solid_fill_pattern)
-    --start-gcode       Load initial gcode from the supplied file. This will overwrite
+    --start-gcode       Load initial G-code from the supplied file. This will overwrite
                         the default command (home all axes [G28]).
-    --end-gcode         Load final gcode from the supplied file. This will overwrite 
+    --end-gcode         Load final G-code from the supplied file. This will overwrite 
                         the default commands (turn off temperature [M104 S0],
                         home X axis [G28 X], disable motors [M84]).
+    --layer-gcode       Load layer-change G-code from the supplied file (default: nothing).
     --support-material  Generate support material for overhangs
   
    Retraction options:

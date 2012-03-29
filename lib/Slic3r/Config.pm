@@ -63,7 +63,7 @@ our $Options = {
         type    => 'f',
     },
     'gcode_arcs' => {
-        label   => 'Use native GCODE arcs',
+        label   => 'Use native G-code arcs',
         cli     => 'gcode-arcs',
         type    => 'bool',
     },
@@ -116,36 +116,36 @@ our $Options = {
     # speed options
     'travel_speed' => {
         label   => 'Travel (mm/s)',
-        cli     => 'travel-speed=i',
+        cli     => 'travel-speed=f',
         type    => 'f',
         aliases => [qw(travel_feed_rate)],
     },
     'perimeter_speed' => {
         label   => 'Perimeters (mm/s)',
-        cli     => 'perimeter-speed=i',
+        cli     => 'perimeter-speed=f',
         type    => 'f',
         aliases => [qw(perimeter_feed_rate)],
     },
     'small_perimeter_speed' => {
         label   => 'Small perimeters (mm/s)',
-        cli     => 'small-perimeter-speed=i',
+        cli     => 'small-perimeter-speed=f',
         type    => 'f',
     },
     'infill_speed' => {
         label   => 'Infill (mm/s)',
-        cli     => 'infill-speed=i',
+        cli     => 'infill-speed=f',
         type    => 'f',
         aliases => [qw(print_feed_rate infill_feed_rate)],
     },
     'solid_infill_speed' => {
         label   => 'Solid infill (mm/s)',
-        cli     => 'solid-infill-speed=i',
+        cli     => 'solid-infill-speed=f',
         type    => 'f',
         aliases => [qw(solid_infill_feed_rate)],
     },
     'bridge_speed' => {
         label   => 'Bridges (mm/s)',
-        cli     => 'bridge-speed=i',
+        cli     => 'bridge-speed=f',
         type    => 'f',
         aliases => [qw(bridge_feed_rate)],
     },
@@ -250,23 +250,33 @@ our $Options = {
         labels  => [qw(Primary Secondary)],
     },
     'start_gcode' => {
-        label   => 'Start GCODE',
+        label   => 'Start G-code',
         cli     => 'start-gcode=s',
         type    => 's',
         multiline => 1,
         width   => 350,
-        height  => 150,
+        height  => 120,
         serialize   => sub { join '\n', split /\R+/, $_[0] },
         deserialize => sub { join "\n", split /\\n/, $_[0] },
         interpret => 1,
     },
     'end_gcode' => {
-        label   => 'End GCODE',
+        label   => 'End G-code',
         cli     => 'end-gcode=s',
         type    => 's',
         multiline => 1,
         width   => 350,
-        height  => 150,
+        height  => 120,
+        serialize   => sub { join '\n', split /\R+/, $_[0] },
+        deserialize => sub { join "\n", split /\\n/, $_[0] },
+    },
+    'layer_gcode' => {
+        label   => 'Layer Change G-code',
+        cli     => 'layer-gcode=s',
+        type    => 's',
+        multiline => 1,
+        width   => 350,
+        height  => 50,
         serialize   => sub { join '\n', split /\R+/, $_[0] },
         deserialize => sub { join "\n", split /\\n/, $_[0] },
         interpret => 1,
@@ -290,7 +300,7 @@ our $Options = {
     },
     'retract_speed' => {
         label   => 'Speed (mm/s)',
-        cli     => 'retract-speed=i',
+        cli     => 'retract-speed=f',
         type    => 'i',
     },
     'retract_restart_extra' => {
@@ -342,7 +352,7 @@ our $Options = {
     },
     'min_print_speed' => {
         label   => 'Min print speed (mm/s)',
-        cli     => 'min-print-speed=i',
+        cli     => 'min-print-speed=f',
         type    => 'i',
     },
     'disable_fan_first_layers' => {
@@ -364,7 +374,7 @@ our $Options = {
     },
     'skirt_distance' => {
         label   => 'Distance from object (mm)',
-        cli     => 'skirt-distance=i',
+        cli     => 'skirt-distance=f',
         type    => 'i',
     },
     'skirt_height' => {
@@ -398,7 +408,7 @@ our $Options = {
     },
     'duplicate_distance' => {
         label   => 'Distance between copies',
-        cli     => 'duplicate-distance=i',
+        cli     => 'duplicate-distance=f',
         type    => 'i',
         aliases => [qw(multiply_distance)],
     },
@@ -477,7 +487,7 @@ sub validate_cli {
     my $class = shift;
     my ($opt) = @_;
     
-    for (qw(start end)) {
+    for (qw(start end layer)) {
         if (defined $opt->{$_."_gcode"}) {
             if ($opt->{$_."_gcode"} eq "") {
                 set($_."_gcode", "");
@@ -556,7 +566,7 @@ sub validate {
     
     # --perimeters
     die "Invalid value for --perimeters\n"
-        if $Slic3r::perimeters < 1;
+        if $Slic3r::perimeters < 0;
     
     # --solid-layers
     die "Invalid value for --solid-layers\n"

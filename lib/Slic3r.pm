@@ -107,7 +107,13 @@ our $support_material_tool = 0;
 our $start_gcode = "G28 ; home all axes";
 our $end_gcode = "M104 S0 ; turn off temperature
 G28 X0  ; home X axis
+<<<<<<< HEAD
 M84     ; disable motors";
+=======
+M84     ; disable motors
+END
+our $layer_gcode        = '';
+>>>>>>> upstream/master
 
 # retraction options
 our $retract_length         = 1;    # mm

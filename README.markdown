@@ -36,7 +36,7 @@ Slic3r current key features are:
 * center print around bed center point;
 * multiple solid layers near horizontal external surfaces;
 * ability to scale, rotate and duplicate input object;
-* customizable initial and final GCODE;
+* customizable initial and final G-code;
 * support material;
 * cooling and fan control;
 * use different speed for bottom layer and perimeters.
@@ -93,6 +93,7 @@ The author is Alessandro Ranellucci (me).
                             and [input_filename] (default: [input_filename_base].gcode)
         --post-process      Generated G-code will be processed with the supplied script;
                             call this more than once to process through multiple scripts.
+        --export-svg        Export a SVG file containing slices instead of G-code.
       
       Printer options:
         --nozzle-diameter   Diameter of nozzle in mm (default: 0.5)
@@ -107,7 +108,7 @@ The author is Alessandro Ranellucci (me).
                             by all firmwares)
         --g0                Use G0 commands for retraction (experimental, not supported by all
                             firmwares)
-        --gcode-comments    Make GCODE verbose by adding comments (default: no)
+        --gcode-comments    Make G-code verbose by adding comments (default: no)
         
       Filament options:
         --filament-diameter Diameter in mm of your raw filament (default: 3)
@@ -143,8 +144,7 @@ The author is Alessandro Ranellucci (me).
                             Infill every N layers (default: 1)
       
       Print options:
-        --perimeters        Number of perimeters/horizontal skins (range: 1+, 
-                            default: 3)
+        --perimeters        Number of perimeters/horizontal skins (range: 0+, default: 3)
         --solid-layers      Number of solid layers to do for top/bottom surfaces
                             (range: 1+, default: 3)
         --fill-density      Infill density (range: 0-1, default: 0.4)
@@ -156,6 +156,7 @@ The author is Alessandro Ranellucci (me).
         --end-gcode         Load final gcode from the supplied file. This will overwrite 
                             the default commands (turn off temperature [M104 S0],
                             home X axis [G28 X], disable motors [M84]).
+        --layer-gcode       Load layer-change G-code from the supplied file (default: nothing).
         --support-material  Generate support material for overhangs
       
        Retraction options:

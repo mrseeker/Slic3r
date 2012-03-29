@@ -63,8 +63,8 @@ sub new {
             options => [qw(scale rotate duplicate_x duplicate_y duplicate_distance)],
         },
         gcode => {
-            title => 'Custom GCODE',
-            options => [qw(start_gcode end_gcode gcode_comments post_process)],
+            title => 'Custom G-code',
+            options => [qw(start_gcode end_gcode layer_gcode gcode_comments post_process)],
         },
         extrusion => {
             title => 'Extrusion',
@@ -120,7 +120,7 @@ sub new {
     $tabpanel->AddPage($tabs[0], "Print Settings");
     $tabpanel->AddPage($tabs[1], "Cooling");
     $tabpanel->AddPage($tabs[2], "Printer and Filament");
-    $tabpanel->AddPage($tabs[3], "Start/End GCODE");
+    $tabpanel->AddPage($tabs[3], "Custom G-code");
     $tabpanel->AddPage($tabs[4], "Notes");
     $tabpanel->AddPage($tabs[5], "Advanced");
         
@@ -160,7 +160,7 @@ sub new {
 
 my $model_wildcard = "STL files (*.stl)|*.stl;*.STL|AMF files (*.amf)|*.amf;*.AMF;*.xml;*.XML";
 my $ini_wildcard = "INI files *.ini|*.ini;*.INI";
-my $gcode_wildcard = "GCODE files *.gcode|*.gcode;*.GCODE";
+my $gcode_wildcard = "G-code files *.gcode|*.gcode;*.GCODE";
 
 sub do_slice {
     my $self = shift;
@@ -222,7 +222,8 @@ sub do_slice {
             }
         } elsif ($params{save_as}) {
             my $output_file = $skein->expanded_output_filepath;
-            my $dlg = Wx::FileDialog->new($self, 'Save gcode file as:', dirname($output_file),
+            $output_file =~ s/\.gcode$/.svg/i if $params{export_svg};
+            my $dlg = Wx::FileDialog->new($self, 'Save ' . ($params{export_svg} ? 'SVG' : 'G-code') . ' file as:', dirname($output_file),
                 basename($output_file), $gcode_wildcard, wxFD_SAVE);
             return if $dlg->ShowModal != wxID_OK;
             $skein->output_file($dlg->GetPath);
@@ -237,15 +238,22 @@ sub do_slice {
         {
             my @warnings = ();
             local $SIG{__WARN__} = sub { push @warnings, $_[0] };
-            $skein->go;
+            if ($params{export_svg}) {
+                $skein->export_svg;
+            } else {
+                $skein->go;
+            }
             $self->catch_warning->($_) for @warnings;
         }
         $process_dialog->Destroy;
         undef $process_dialog;
         
-        my $message = sprintf "%s was successfully sliced in %d minutes and %.3f seconds.",
-            $input_file_basename, int($skein->processing_time/60),
-            $skein->processing_time - int($skein->processing_time/60)*60;
+        my $message = "$input_file_basename was successfully sliced";
+        $message .= sprintf " in %d minutes and %.3f seconds",
+            int($skein->processing_time/60),
+            $skein->processing_time - int($skein->processing_time/60)*60
+            if $skein->processing_time;
+        $message .= ".";
         eval {
             $self->{growler}->notify(Event => 'SKEIN_DONE', Title => 'Slicing Done!', Message => $message)
                 if ($self->{growler});

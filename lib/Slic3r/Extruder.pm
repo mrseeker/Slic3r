@@ -49,6 +49,9 @@ sub change_layer {
     $gcode .= $self->G0(undef, $z, 0, 'move to next layer')
         if $self->z != $z;
     
+    $gcode .= Slic3r::Config->replace_options($Slic3r::layer_gcode) . "\n"
+        if $Slic3r::layer_gcode;
+    
     return $gcode;
 }
 
@@ -180,7 +183,7 @@ sub retract {
         : [undef, $self->z + $Slic3r::retract_lift, 0, 'lift plate during retraction'];
     
     my $gcode = "";
-    if ($Slic3r::g0 && $params{travel_to}) {
+    if (($Slic3r::g0 || $Slic3r::gcode_flavor eq 'mach3') && $params{travel_to}) {
         if ($lift) {
             # combine lift and retract
             $lift->[2] = $retract->[2];
@@ -190,7 +193,7 @@ sub retract {
             my $travel = [$params{travel_to}, undef, $retract->[2], 'travel and retract'];
             $gcode .= $self->G0(@$travel);
         }
-    } elsif ($Slic3r::g0 && defined $params{move_z}) {
+    } elsif (($Slic3r::g0 || $Slic3r::gcode_flavor eq 'mach3') && defined $params{move_z}) {
         # combine Z change and retraction
         my $travel = [undef, $params{move_z}, $retract->[2], 'change layer and retract'];
         $gcode .= $self->G0(@$travel);
@@ -241,7 +244,7 @@ sub set_acceleration {
 
 sub G0 {
     my $self = shift;
-    return $self->G1(@_) if !$Slic3r::g0;
+    return $self->G1(@_) if !($Slic3r::g0 || $Slic3r::gcode_flavor eq 'mach3');
     return $self->_G0_G1("G0", @_);
 }
 
@@ -346,7 +349,8 @@ sub set_fan {
         if ($speed == 0) {
             return sprintf "M107%s\n", ($Slic3r::gcode_comments ? ' ; disable fan' : '');
         } else {
-            return sprintf "M106 S%d%s\n", (255 * $speed / 100), ($Slic3r::gcode_comments ? ' ; enable fan' : '');
+            return sprintf "M106 %s%d%s\n", ($Slic3r::gcode_flavor eq 'mach3' ? 'P' : 'S'),
+                (255 * $speed / 100), ($Slic3r::gcode_comments ? ' ; enable fan' : '');
         }
     }
     return "";
