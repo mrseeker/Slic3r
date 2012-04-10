@@ -108,9 +108,12 @@ sub clean {
 sub check_manifoldness {
     my $self = shift;
     
+    # look for edges not connected to exactly two facets
     if (grep { @$_ != 2 } @{$self->edges_facets}) {
-        warn "Warning: The input file is not manifold. You might want to check the "
-            . "resulting gcode before printing.\n";
+        my ($first_bad_edge_id) = grep { @{ $self->edges_facets->[$_] } != 2 } 0..$#{$self->edges_facets};
+        warn sprintf "Warning: The input file is not manifold near edge %f-%f. "
+            . "You might want to check the resulting G-code before printing.\n",
+            @{$self->edges->[$first_bad_edge_id]};
     }
 }
 
@@ -242,8 +245,10 @@ sub make_loops {
             $line = $next_line;
         } while ($first_facet_index != $line->facet_index);
     
-        Slic3r::debugf "  Discovered polygon of %d points\n", scalar(@points);
         push @polygons, Slic3r::Polygon->new(@points);
+        Slic3r::debugf "  Discovered %s polygon of %d points\n",
+            ($polygons[-1]->is_counter_clockwise ? 'ccw' : 'cw'), scalar(@points)
+            if $Slic3r::debug;
         pop @polygons if !$polygons[-1]->cleanup;
     }
     
@@ -361,10 +366,13 @@ sub slice_facet {
     my $max_layer = int((unscale($max_z) - ($first_layer_height + $Slic3r::layer_height / 2)) / $Slic3r::layer_height) + 2;
     Slic3r::debugf "layers: min = %s, max = %s\n", $min_layer, $max_layer;
     
+    my $lines = {};  # layer_id => [ lines ]
     for (my $layer_id = $min_layer; $layer_id <= $max_layer; $layer_id++) {
         my $layer = $print->layer($layer_id);
-        $layer->add_line($_) for $self->intersect_facet($facet_id, $layer->slice_z);
+        $lines->{$layer_id} ||= [];
+        push @{ $lines->{$layer_id} }, $self->intersect_facet($facet_id, $layer->slice_z);
     }
+    return $lines;
 }
 
 sub intersect_facet {

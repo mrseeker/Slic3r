@@ -60,7 +60,7 @@ sub new {
         },
         transform => {
             title => 'Transform',
-            options => [qw(scale rotate duplicate_x duplicate_y duplicate_distance)],
+            options => [qw(scale rotate duplicate duplicate_x duplicate_y duplicate_distance)],
         },
         gcode => {
             title => 'Custom G-code',
@@ -84,7 +84,7 @@ sub new {
     if (eval "use Growl::GNTP; 1") {
         # register growl notifications
         eval {
-            $self->{growler} = Growl::GNTP->new(AppName => 'Slic3r'); #, AppIcon => "path/to/my/icon.gif");
+            $self->{growler} = Growl::GNTP->new(AppName => 'Slic3r', AppIcon => "$FindBin::Bin/var/icon.png");
             $self->{growler}->register([{Name => 'SKEIN_DONE', DisplayName => 'Slicing Done'}]);
         };
     }
